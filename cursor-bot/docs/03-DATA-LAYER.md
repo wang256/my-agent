@@ -556,7 +556,7 @@ if success:
 ### 4.1 Session 数据流
 
 ```
-用户发送消息（SeaTalk）
+用户发送消息（FeiShu）
   ↓
 消息消费者读取 Redis 队列
   ↓

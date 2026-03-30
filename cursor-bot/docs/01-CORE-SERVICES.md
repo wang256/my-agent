@@ -12,7 +12,7 @@
 
 ```
 src/algo_bot/services/
-├── seatalk_callback.py      # SeaTalk 回调工具函数
+├── FeiShu_callback.py      # FeiShu 回调工具函数
 ├── projects_git_sync.py     # Git 仓库同步服务
 ├── project_sync_service.py  # 项目同步调度服务
 ├── http_server.py           # HTTP 健康检查服务
@@ -21,11 +21,11 @@ src/algo_bot/services/
 
 ---
 
-## 二、SeaTalk 回调工具 (seatalk_callback.py)
+## 二、FeiShu 回调工具 (FeiShu_callback.py)
 
 ### 2.1 模块职责
 
-提供 SeaTalk webhook 回调的**共享工具函数**，用于签名验证、消息解析、事件过滤等。
+提供 FeiShu webhook 回调的**共享工具函数**，用于签名验证、消息解析、事件过滤等。
 
 **注意**: 这不是完整的回调处理服务，而是工具函数集合。
 
@@ -45,7 +45,7 @@ SUPPORTED_EVENT_TYPES = {
 ```
 
 **设计说明**:
-- `EVENT_VERIFICATION`: SeaTalk 验证 webhook URL 可用性时发送，需特殊处理
+- `EVENT_VERIFICATION`: FeiShu 验证 webhook URL 可用性时发送，需特殊处理
 - `SUPPORTED_EVENT_TYPES`: 定义哪些事件会被业务处理，其他事件静默忽略
 
 ### 2.3 签名验证函数
@@ -53,7 +53,7 @@ SUPPORTED_EVENT_TYPES = {
 ```python
 def is_valid_signature(signing_secret: str, body: bytes, signature: str) -> bool:
     """
-    验证 SeaTalk 回调签名
+    验证 FeiShu 回调签名
     
     Args:
         signing_secret: 签名密钥（来自配置）
@@ -71,7 +71,7 @@ def is_valid_signature(signing_secret: str, body: bytes, signature: str) -> bool
 
 1. **签名算法**: `sha256(body + signing_secret)`
    - ⚠️ **不是标准 HMAC**，而是简单的字符串拼接哈希
-   - 这是 SeaTalk 平台定义的协议，必须遵循
+   - 这是 FeiShu 平台定义的协议，必须遵循
 
 2. **body 必须是原始字节**:
    ```python
@@ -95,7 +95,7 @@ def is_valid_signature(signing_secret: str, body: bytes, signature: str) -> bool
 ```python
 def parse_callback_event(body: bytes) -> Dict[str, Any]:
     """
-    解析并验证 SeaTalk 回调消息
+    解析并验证 FeiShu 回调消息
     
     Args:
         body: 原始 HTTP body（bytes）
@@ -137,7 +137,7 @@ def parse_callback_event(body: bytes) -> Dict[str, Any]:
 **在 Webhook 适配器中使用**:
 
 ```python
-from algo_bot.services.seatalk_callback import (
+from algo_bot.services.FeiShu_callback import (
     is_valid_signature,
     parse_callback_event,
     SUPPORTED_EVENT_TYPES,
@@ -154,7 +154,7 @@ async def callback(request: Request):
     body = await request.body()
     
     # 2. 验证签名
-    if not is_valid_signature(Config.SEATALK_SIGNING_SECRET, body, signature):
+    if not is_valid_signature(Config.FeiShu_SIGNING_SECRET, body, signature):
         raise HTTPException(status_code=401, detail="Invalid signature")
     
     # 3. 解析消息
@@ -168,15 +168,15 @@ async def callback(request: Request):
     
     # 特殊事件：验证 URL
     if event_type == EVENT_VERIFICATION:
-        challenge = payload["event"].get("seatalk_challenge")
-        return {"seatalk_challenge": challenge}
+        challenge = payload["event"].get("FeiShu_challenge")
+        return {"FeiShu_challenge": challenge}
     
     # 过滤事件
     if event_type not in SUPPORTED_EVENT_TYPES:
         return {"status": "ignored"}
     
     # 转发到 Redis 队列
-    redis_client.lpush("algo:bot:seatalk:list", body.decode("utf-8"))
+    redis_client.lpush("algo:bot:FeiShu:list", body.decode("utf-8"))
     return {"status": "accepted"}
 ```
 
@@ -193,7 +193,7 @@ async def callback(request: Request):
 - 执行 `git clone`（首次）或 `git pull`（更新）
 - 智能分支选择（release → master → main）
 - 并发同步（ThreadPoolExecutor）
-- 发送同步结果通知到 SeaTalk
+- 发送同步结果通知到 FeiShu
 
 ### 3.2 核心配置
 
@@ -424,7 +424,7 @@ def sync_projects_from_csv(
     csv_file: str = DEFAULT_CSV_FILE,
     projects_dir: str = DEFAULT_PROJECTS_DIR,
     max_workers: int = 3,
-    seatalk_client: Optional[SeaTalkAPIClient] = None,
+    FeiShu_client: Optional[FeiShuAPIClient] = None,
     sync_logger=logger
 ) -> Dict[str, int]:
     """
@@ -434,7 +434,7 @@ def sync_projects_from_csv(
         csv_file: CSV 文件路径
         projects_dir: 目标目录
         max_workers: 并发数
-        seatalk_client: SeaTalk 客户端（用于发送通知）
+        FeiShu_client: FeiShu 客户端（用于发送通知）
         sync_logger: 日志记录器
     
     Returns:
@@ -512,9 +512,9 @@ def sync_projects_from_csv(
                 sync_logger.error(f"同步异常: {project['repo_name']} - {e}")
     
     # 4. 发送通知
-    if seatalk_client:
+    if FeiShu_client:
         send_sync_result_notification(
-            seatalk_client,
+            FeiShu_client,
             DEFAULT_SYNC_NOTIFY_GROUP_ID,
             stats,
             sync_logger
@@ -529,7 +529,7 @@ def sync_projects_from_csv(
 - `max_workers=3`: 默认 3 个并发（可配置）
 - 避免过多并发导致 Git 服务器压力过大
 
-### 3.4 SeaTalk 通知
+### 3.4 FeiShu 通知
 
 ```python
 def build_sync_result_message(stats: Dict[str, int], sync_type: str) -> str:
@@ -570,24 +570,24 @@ def build_sync_result_message(stats: Dict[str, int], sync_type: str) -> str:
 **状态**: {'全部成功' if failed == 0 else f'{failed} 个项目同步失败'}"""
 
 def send_sync_result_notification(
-    seatalk_client: Optional[SeaTalkAPIClient],
+    FeiShu_client: Optional[FeiShuAPIClient],
     group_id: str,
     stats: Dict[str, int],
     sync_logger=logger,
     sync_type: str = "定时同步"
 ) -> bool:
     """
-    发送同步结果通知到 SeaTalk 群组
+    发送同步结果通知到 FeiShu 群组
     
     Returns:
         bool: 是否发送成功
     """
-    if not seatalk_client or not group_id:
+    if not FeiShu_client or not group_id:
         return False
     
     try:
         message = build_sync_result_message(stats, sync_type)
-        seatalk_client.send_message_to_group(group_id=group_id, content=message)
+        FeiShu_client.send_message_to_group(group_id=group_id, content=message)
         sync_logger.info(f"同步结果通知已发送到群组: {group_id}")
         return True
     except Exception as e:
@@ -613,17 +613,17 @@ uv run python -m algo_bot.services.projects_git_sync \
 
 ```python
 from algo_bot.services.projects_git_sync import sync_projects_from_csv
-from algo_bot.integrations.seatalk_api import get_seatalk_client
+from algo_bot.integrations.FeiShu_api import get_FeiShu_client
 
-# 创建 SeaTalk 客户端（可选）
-seatalk_client = get_seatalk_client(app_id, app_secret)
+# 创建 FeiShu 客户端（可选）
+FeiShu_client = get_FeiShu_client(app_id, app_secret)
 
 # 执行同步
 stats = sync_projects_from_csv(
     csv_file="projects_src/project_info.csv",
     projects_dir="./projects_src",
     max_workers=3,
-    seatalk_client=seatalk_client
+    FeiShu_client=FeiShu_client
 )
 
 print(f"同步完成: 成功 {stats['success']}, 失败 {stats['failed']}")
@@ -708,13 +708,13 @@ def run_integrated_sync(sync_type: str = "手动同步") -> Dict[str, int]:
     
     # 2. Git 同步
     logger.info("步骤 2/2: 同步 Git 仓库...")
-    seatalk_client = create_sync_notification_client()
+    FeiShu_client = create_sync_notification_client()
     
     stats = sync_projects_from_csv(
         csv_file=Config.PROJECT_SYNC_CSV_FILE,
         projects_dir=Config.PROJECT_SYNC_DIR,
         max_workers=Config.PROJECT_SYNC_MAX_WORKERS,
-        seatalk_client=seatalk_client,
+        FeiShu_client=FeiShu_client,
         sync_type=sync_type
     )
     

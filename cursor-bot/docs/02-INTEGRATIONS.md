@@ -2,7 +2,7 @@
 
 ## 文档概述
 
-本文档详细介绍 Algo Bot 的外部集成层 (`src/algo_bot/integrations/`)，包括 Cursor Agent、SeaTalk API、GitLab 权限验证和 Redis 客户端的实现细节。
+本文档详细介绍 Algo Bot 的外部集成层 (`src/algo_bot/integrations/`)，包括 Cursor Agent、FeiShu API、GitLab 权限验证和 Redis 客户端的实现细节。
 
 **前置阅读**: [00-ARCHITECTURE.md](./00-ARCHITECTURE.md)
 
@@ -13,7 +13,7 @@
 ```
 src/algo_bot/integrations/
 ├── cursor_agent.py       # Cursor Agent CLI 客户端
-├── seatalk_api.py        # SeaTalk OpenAPI 客户端
+├── FeiShu_api.py        # FeiShu OpenAPI 客户端
 ├── gitlab_auth.py        # GitLab 权限验证
 └── redis_client.py       # Redis 客户端封装
 ```
@@ -268,11 +268,11 @@ response = client.send_message(
 
 ---
 
-## 三、SeaTalk API 客户端 (seatalk_api.py)
+## 三、FeiShu API 客户端 (FeiShu_api.py)
 
 ### 3.1 模块职责
 
-封装 SeaTalk OpenAPI，提供消息查询、发送、文件下载等功能。
+封装 FeiShu OpenAPI，提供消息查询、发送、文件下载等功能。
 
 **核心功能**:
 - Access Token 自动管理（获取、刷新）
@@ -284,10 +284,10 @@ response = client.send_message(
 ### 3.2 核心类
 
 ```python
-class SeaTalkAPIClient:
-    """SeaTalk OpenAPI 客户端"""
+class FeiShuAPIClient:
+    """FeiShu OpenAPI 客户端"""
     
-    BASE_URL = "https://openapi.seatalk.io"
+    BASE_URL = "https://openapi.FeiShu.io"
     MAX_TEXT_MESSAGE_LENGTH = 4096
     TEXT_CHUNK_SAFE_LIMIT = 3800
     TOKEN_REFRESH_BUFFER = 300  # 提前 5 分钟刷新
@@ -299,7 +299,7 @@ class SeaTalkAPIClient:
         base_url: str = None,
         timeout: int = 30
     ):
-        """初始化 SeaTalk API 客户端"""
+        """初始化 FeiShu API 客户端"""
 ```
 
 ### 3.3 Token 管理
@@ -328,7 +328,7 @@ def _get_access_token(self) -> str:
         data = response.json()
         
         if data.get("code") != 0:
-            raise SeaTalkAPIError(
+            raise FeiShuAPIError(
                 code=data.get("code", -1),
                 message=data.get("msg", "获取 token 失败")
             )
@@ -431,7 +431,7 @@ def send_long_message(
     """
     发送长消息（自动分片）
     
-    SeaTalk 限制单条消息最大 4096 字符，
+    FeiShu 限制单条消息最大 4096 字符，
     此方法会自动分片发送。
     
     Returns:
@@ -475,7 +475,7 @@ def download_file(
     save_path: str
 ) -> str:
     """
-    下载 SeaTalk 文件
+    下载 FeiShu 文件
     
     Args:
         file_key: 文件唯一标识
@@ -506,10 +506,10 @@ def download_file(
 ### 3.5 使用示例
 
 ```python
-from algo_bot.integrations.seatalk_api import SeaTalkAPIClient
+from algo_bot.integrations.FeiShu_api import FeiShuAPIClient
 
 # 创建客户端
-client = SeaTalkAPIClient(
+client = FeiShuAPIClient(
     app_id="your_app_id",
     app_secret="your_app_secret"
 )
@@ -673,10 +673,10 @@ client = redis.Redis(
 )
 
 # 消息队列：生产者
-client.lpush("algo:bot:seatalk:list", json.dumps(message))
+client.lpush("algo:bot:FeiShu:list", json.dumps(message))
 
 # 消息队列：消费者（阻塞）
-result = client.brpop("algo:bot:seatalk:list", timeout=0)
+result = client.brpop("algo:bot:FeiShu:list", timeout=0)
 if result:
     _, message_json = result
     message = json.loads(message_json)
@@ -705,7 +705,7 @@ if lock_acquired:
 
 ```python
 from algo_bot.integrations.cursor_agent import CursorAgentClient
-from algo_bot.integrations.seatalk_api import SeaTalkAPIClient
+from algo_bot.integrations.FeiShu_api import FeiShuAPIClient
 from algo_bot.integrations.gitlab_auth import GitLabAuthChecker
 
 # 1. 创建客户端
@@ -714,7 +714,7 @@ cursor_client = CursorAgentClient(
     timeout=120
 )
 
-seatalk_client = SeaTalkAPIClient(
+FeiShu_client = FeiShuAPIClient(
     app_id="your_app_id",
     app_secret="your_app_secret"
 )
@@ -728,7 +728,7 @@ gitlab_checker = GitLabAuthChecker(
 # 2. 权限检查
 user_email = "user@example.com"
 if not gitlab_checker.check_user_permission(email=user_email):
-    seatalk_client.send_message(
+    FeiShu_client.send_message(
         thread_id="...",
         content="抱歉，您没有权限使用此服务"
     )
@@ -740,15 +740,15 @@ response = cursor_client.send_message(
     session_id=session_id  # 从数据库恢复
 )
 
-# 4. 发送结果到 SeaTalk
+# 4. 发送结果到 FeiShu
 if response.success:
-    seatalk_client.send_long_message(
+    FeiShu_client.send_long_message(
         thread_id="...",
         content=response.result['content'],
         is_markdown=True
     )
 else:
-    seatalk_client.send_message(
+    FeiShu_client.send_message(
         thread_id="...",
         content=f"处理失败: {response.error}"
     )

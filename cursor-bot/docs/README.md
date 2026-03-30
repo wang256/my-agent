@@ -16,14 +16,14 @@
    - 关键技术决策
 
 2. **[01-CORE-SERVICES.md](./01-CORE-SERVICES.md)** - 核心服务模块详解
-   - SeaTalk 回调工具函数
+   - FeiShu 回调工具函数
    - Git 仓库同步服务
    - 项目同步调度服务
    - HTTP 健康检查服务
 
 3. **[02-INTEGRATIONS.md](./02-INTEGRATIONS.md)** - 外部集成模块详解
    - Cursor Agent CLI 客户端
-   - SeaTalk OpenAPI 客户端
+   - FeiShu OpenAPI 客户端
    - GitLab 权限验证
    - Redis 客户端封装
 
@@ -94,7 +94,7 @@
 - 01-CORE-SERVICES.md - 消息处理
 - 01-CORE-SERVICES.md - Git 同步
 - 02-INTEGRATIONS.md - Cursor Agent 调用
-- 02-INTEGRATIONS.md - SeaTalk API
+- 02-INTEGRATIONS.md - FeiShu API
 
 **数据管理**:
 - 03-DATA-LAYER.md - Session 管理
@@ -155,7 +155,7 @@
 | SQLite | - | Session会话管理 |
 | MySQL | ≥5.7 | 项目信息存储 |
 | cursor-agent | latest | AI代码分析引擎 |
-| SeaTalk | - | 即时通讯平台 |
+| FeiShu | - | 即时通讯平台 |
 
 ### Python 依赖
 
@@ -181,7 +181,7 @@ dependencies = [
 ### 1. 双层 Session 映射
 
 ```
-业务层: thread_id (SeaTalk线程)
+业务层: thread_id (FeiShu线程)
   ↓ SQLite持久化映射
 AI层: cursor_session_id (AI会话)
 ```
@@ -220,7 +220,7 @@ Redis 队列
 ### 消息处理流程
 
 ```
-SeaTalk 用户消息
+FeiShu 用户消息
   ↓ Webhook
 Webhook 适配器（签名验证）
   ↓ LPUSH
@@ -234,7 +234,7 @@ SQLite
   ↓ 调用AI
 cursor-agent 子进程
   ↓ 结果发送
-SeaTalk API
+FeiShu API
 ```
 
 ### Git 同步流程
@@ -338,7 +338,7 @@ EOF
 
 ### 外部文档
 - **Cursor Agent 文档**: https://docs.cursor.com/
-- **SeaTalk API 文档**: (企业内部)
+- **FeiShu API 文档**: (企业内部)
 - **GitLab API 文档**: https://docs.gitlab.com/ee/api/
 - **Redis 文档**: https://redis.io/docs/
 

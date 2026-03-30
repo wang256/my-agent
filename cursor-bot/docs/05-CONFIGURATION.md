@@ -49,12 +49,12 @@ redis:
   password:  # 可选
   db: 0
 
-# SeaTalk Bot API 配置
-seatalk_bot_api:
+# FeiShu Bot API 配置
+FeiShu_bot_api:
   app_id: "your_app_id"
   app_secret: "your_app_secret"
   signing_secret: "your_signing_secret"
-  download_dir: "./projects_src/downloads/seatalk"
+  download_dir: "./projects_src/downloads/FeiShu"
 
 # Cursor Agent 配置
 cursor_agent:
@@ -109,7 +109,7 @@ logger:
 ```yaml
 # 最小可运行配置
 
-seatalk_bot_api:
+FeiShu_bot_api:
   app_id: "your_app_id"
   app_secret: "your_app_secret"
 
@@ -156,7 +156,7 @@ redis:
 ```
 
 **用途**:
-1. **消息队列**: `algo:bot:seatalk:list`
+1. **消息队列**: `algo:bot:FeiShu:list`
 2. **分布式锁**: `algo:bot:sync:lock`
 
 **生产环境建议**:
@@ -164,18 +164,18 @@ redis:
 - 启用持久化 (AOF + RDB)
 - 设置密码
 
-### 3.3 SeaTalk Bot API 配置
+### 3.3 FeiShu Bot API 配置
 
 ```yaml
-seatalk_bot_api:
-  app_id: "your_app_id"                  # SeaTalk 应用 ID
-  app_secret: "your_app_secret"          # SeaTalk 应用密钥
+FeiShu_bot_api:
+  app_id: "your_app_id"                  # FeiShu 应用 ID
+  app_secret: "your_app_secret"          # FeiShu 应用密钥
   signing_secret: "your_signing_secret"  # Webhook 签名密钥
-  download_dir: "./projects_src/downloads/seatalk"  # 文件下载目录
+  download_dir: "./projects_src/downloads/FeiShu"  # 文件下载目录
 ```
 
 **获取方式**:
-1. 登录 SeaTalk 开放平台
+1. 登录 FeiShu 开放平台
 2. 创建或选择应用
 3. 在「应用信息」页面获取 App ID 和 App Secret
 4. 在「事件订阅」页面获取 Signing Secret
@@ -389,9 +389,9 @@ mcp.gitlab_url → GITLAB_URL
 # Cursor API
 export CURSOR_API_KEY=cursor_api_key_***
 
-# SeaTalk API
-export SEATALK_APP_ID=your_app_id
-export SEATALK_APP_SECRET=your_app_secret
+# FeiShu API
+export FeiShu_APP_ID=your_app_id
+export FeiShu_APP_SECRET=your_app_secret
 
 # Redis
 export REDIS_HOST=localhost
@@ -453,8 +453,8 @@ Config.print_config()
 ### 5.3 配置验证
 
 **必填项**:
-- `SEATALK_APP_ID`
-- `SEATALK_APP_SECRET`
+- `FeiShu_APP_ID`
+- `FeiShu_APP_SECRET`
 - `CURSOR_API_KEY`
 - `REDIS_HOST`
 - `MYSQL_HOST`

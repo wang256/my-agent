@@ -20,11 +20,11 @@
 
 ### 1.1 项目概述
 
-**Algo Bot** 是一个基于 **Cursor Agent**、**SeaTalk** 和 **Redis** 构建的企业级智能代码分析平台，为团队提供 7×24 小时的 AI 代码咨询服务。
+**Algo Bot** 是一个基于 **Cursor Agent**、**FeiShu** 和 **Redis** 构建的企业级智能代码分析平台，为团队提供 7×24 小时的 AI 代码咨询服务。
 
 **核心价值**:
 - 将先进的 AI 代码分析能力集成到企业内部工作流
-- 通过即时通讯界面（SeaTalk）与 AI 交互
+- 通过即时通讯界面（FeiShu）与 AI 交互
 - 支持跨仓库代码分析、多轮对话、问题诊断等场景
 - 提升研发效率和代码质量
 
@@ -48,7 +48,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                        SeaTalk 平台                               │
+│                        FeiShu 平台                               │
 │  (即时通讯，用户发送消息，接收 AI 回复)                           │
 └────────────────────────┬─────────────────────────────────────────┘
                          │ Webhook (HTTP POST)
@@ -63,7 +63,7 @@
                          ↓
 ┌──────────────────────────────────────────────────────────────────┐
 │                   Redis List 消息队列                             │
-│  • Key: algo:bot:seatalk:list                                    │
+│  • Key: algo:bot:FeiShu:list                                    │
 │  • 作用: 异步解耦、削峰填谷                                        │
 └────────────────────────┬─────────────────────────────────────────┘
                          │ BRPOP (阻塞拉取)
@@ -71,7 +71,7 @@
 ┌──────────────────────────────────────────────────────────────────┐
 │                  Algo Bot 业务处理服务 (本项目)                    │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │  消息处理主循环 (services/seatalk_callback.py)             │  │
+│  │  消息处理主循环 (services/FeiShu_callback.py)             │  │
 │  │  • Redis 消费者                                            │  │
 │  │  • 消息去重                                                │  │
 │  │  • 权限验证                                                │  │
@@ -206,7 +206,7 @@
 | **数据库** | SQLite | - | Session 会话管理 |
 | **数据库** | MySQL | ≥5.7 | 项目元信息存储 |
 | **AI引擎** | cursor-agent | latest | 代码分析、AI对话 |
-| **IM平台** | SeaTalk | - | 用户交互界面 |
+| **IM平台** | FeiShu | - | 用户交互界面 |
 | **版本控制** | Git | ≥2.0 | 代码仓库管理 |
 
 ### 3.2 Python 依赖
@@ -217,7 +217,7 @@
 dependencies = [
     "redis>=5.0.0",           # Redis 客户端
     "pyyaml>=6.0",            # 配置文件解析
-    "requests>=2.31.0",       # HTTP 请求（SeaTalk API）
+    "requests>=2.31.0",       # HTTP 请求（FeiShu API）
     "python-dotenv>=1.0.0",   # 环境变量加载
     "fastapi>=0.115.0",       # Web 框架（可选）
     "uvicorn>=0.30.0",        # ASGI 服务器（可选）
@@ -233,7 +233,7 @@ dependencies = [
 |------|------|----------|
 | **Redis** | 消息队列、分布式锁 | ✅ 必需 |
 | **MySQL** | 项目元信息存储 | ✅ 必需 |
-| **SeaTalk** | 用户交互界面 | ✅ 必需 |
+| **FeiShu** | 用户交互界面 | ✅ 必需 |
 | **GitLab** | 权限验证、代码托管 | ⚠️ 可选（可禁用权限检查） |
 | **cursor-agent** | AI 代码分析引擎 | ✅ 必需 |
 
@@ -249,14 +249,14 @@ algo-bot/
 │   │   ├── algo_bot.py        # 主入口: algo-bot-agent
 │   │   └── sync_once.py       # 同步工具: algo-bot-sync
 │   ├── services/              # 业务服务层
-│   │   ├── seatalk_callback.py    # SeaTalk 回调处理
+│   │   ├── FeiShu_callback.py    # FeiShu 回调处理
 │   │   ├── projects_git_sync.py   # Git 同步服务
 │   │   ├── project_sync_service.py # 项目同步调度
 │   │   ├── http_server.py         # HTTP 健康检查服务
 │   │   └── health.py              # 健康检查实现
 │   ├── integrations/          # 外部集成层
 │   │   ├── cursor_agent.py        # Cursor Agent 客户端
-│   │   ├── seatalk_api.py         # SeaTalk API 客户端
+│   │   ├── FeiShu_api.py         # FeiShu API 客户端
 │   │   ├── gitlab_auth.py         # GitLab 权限验证
 │   │   └── redis_client.py        # Redis 客户端封装
 │   ├── repositories/          # 数据访问层
@@ -303,13 +303,13 @@ algo-bot/
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ 1. 用户在 SeaTalk 发送消息                                       │
+│ 1. 用户在 Fe iS hus 发送消息                                       │
 │    "@AlgoBot 分析 farm-api 的配置加载逻辑"                       │
 └────────────────────────┬────────────────────────────────────────┘
                          │
                          ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 2. SeaTalk 平台发送 Webhook 到适配器                             │
+│ 2. FeiShu 平台发送 Webhook 到适配器                             │
 │    POST /algobot/api/callback                                   │
 │    Header: signature                                            │
 │    Body: {event_type, event, timestamp...}                      │
@@ -320,14 +320,14 @@ algo-bot/
 │ 3. Webhook 适配器处理（可选独立部署）                             │
 │    • 签名验证（SHA256）                                          │
 │    • 事件过滤（只转发 message_from_bot_subscriber 等）            │
-│    • LPUSH 到 Redis: algo:bot:seatalk:list                      │
+│    • LPUSH 到 Redis: algo:bot:FeiShu:list                      │
 │    • 快速响应 200 OK (<100ms)                                   │
 └────────────────────────┬────────────────────────────────────────┘
                          │
                          ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ 4. Algo Bot 从 Redis 消费消息                                    │
-│    BRPOP algo:bot:seatalk:list 0                                │
+│    BRPOP algo:bot:FeiShu:list 0                                │
 └────────────────────────┬────────────────────────────────────────┘
                          │
                          ↓
@@ -385,8 +385,8 @@ algo-bot/
                          │
                          ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 11. 发送结果到 SeaTalk                                           │
-│     SeaTalkAPIClient.send_message(                              │
+│ 11. 发送结果到 FeiShu                                           │
+│     FeiShuAPIClient.send_message(                              │
 │       thread_id=thread_id,                                      │
 │       content=final_result                                      │
 │     )                                                           │
@@ -430,7 +430,7 @@ algo-bot/
 ### 6.1 消息数据流
 
 ```
-SeaTalk 原始消息
+FeiShu 原始消息
   ↓ JSON
 Redis 队列（完整保留）
   ↓ 解析
@@ -443,7 +443,7 @@ cursor_session_id
 AI 分析结果
   ↓ 格式化
 Markdown 文本
-  ↓ SeaTalk API
+  ↓ FeiShu API
 用户收到回复
 ```
 
@@ -628,7 +628,7 @@ Algo Bot 消费者（无状态）
 
 **不记录日志**:
 - ❌ `CURSOR_API_KEY`
-- ❌ `SEATALK_APP_SECRET`
+- ❌ `FeiShu_APP_SECRET`
 - ❌ `GITLAB_PRIVATE_TOKEN`
 - ❌ Redis/MySQL 密码
 
@@ -647,7 +647,7 @@ Algo Bot 消费者（无状态）
 | **Redis 故障** | 持久化（AOF+RDB） | <1分钟 |
 | **MySQL 故障** | 已导出的 CSV 可继续使用 | 0秒（降级） |
 | **Cursor Agent 崩溃** | 子进程隔离，不影响主服务 | 0秒 |
-| **SeaTalk 超时** | 异步处理，不阻塞 | 0秒 |
+| **FeiShu 超时** | 异步处理，不阻塞 | 0秒 |
 | **GitLab 故障** | 可配置跳过权限检查 | 0秒（降级） |
 
 ### 11.2 监控告警
@@ -671,7 +671,7 @@ Algo Bot 消费者（无状态）
 
 2. **02-INTEGRATIONS.md**: 外部集成模块详解
    - Cursor Agent 客户端
-   - SeaTalk API 客户端
+   - FeiShu API 客户端
    - GitLab 权限验证
    - Redis 客户端封装
 
@@ -702,8 +702,8 @@ Algo Bot 消费者（无状态）
 | 术语 | 说明 |
 |------|------|
 | **Cursor Agent** | Cursor 官方提供的 CLI 工具，用于在命令行调用 AI 分析代码 |
-| **SeaTalk** | 企业即时通讯平台（类似 Slack） |
-| **thread_id** | SeaTalk 消息线程 ID（群聊或私聊） |
+| **FeiShu** | 企业即时通讯平台（类似 Slack） |
+| **thread_id** | FeiShu 消息线程 ID（群聊或私聊） |
 | **cursor_session_id** | Cursor Agent 会话 ID（AI 上下文标识） |
 | **BRPOP** | Redis 命令，阻塞式右侧弹出（FIFO 队列消费） |
 | **LPUSH** | Redis 命令，左侧插入（FIFO 队列生产） |
@@ -712,7 +712,7 @@ Algo Bot 消费者（无状态）
 ### B. 相关链接
 
 - **Cursor Agent 文档**: https://docs.cursor.com/
-- **SeaTalk API 文档**: (企业内部)
+- **FeiShu API 文档**: (企业内部)
 - **GitLab API 文档**: https://docs.gitlab.com/ee/api/
 - **Redis 文档**: https://redis.io/docs/
 
@@ -870,7 +870,7 @@ algo-bot/
 | `cursor_agent.py` | Cursor Agent 集成 |
 | `gitlab_auth.py` | GitLab 鉴权 |
 | `redis_client.py` | Redis 客户端 |
-| `seatalk_api.py` | SeaTalk API 客户端 |
+| `FeiShu_api.py` | FeiShu API 客户端 |
 
 **`src/algo_bot/repositories/`**
 
@@ -889,7 +889,7 @@ algo-bot/
 | `http_server.py` | HTTP 服务（如 Webhook 适配） |
 | `project_sync_service.py` | 项目同步服务 |
 | `projects_git_sync.py` | 多仓库 Git 同步 |
-| `seatalk_callback.py` | SeaTalk 回调与消息消费主循环 |
+| `FeiShu_callback.py` | FeiShu 回调与消息消费主循环 |
 
 > **维护提示**：新增或移动目录/文件后，请同步更新本节，以保持与仓库一致。
 

@@ -117,7 +117,7 @@ def start_message_loop():
     """
     消息处理主循环
     
-    从 Redis 队列消费 SeaTalk 消息，提交到线程池异步处理。
+    从 Redis 队列消费 FeiShu 消息，提交到线程池异步处理。
     """
     # 1. 创建 Redis 客户端
     redis_client = redis.Redis(
@@ -141,9 +141,9 @@ def start_message_loop():
     )
     
     # 4. 创建客户端
-    seatalk_client = SeaTalkAPIClient(
-        app_id=Config.SEATALK_APP_ID,
-        app_secret=Config.SEATALK_APP_SECRET
+    FeiShu_client = FeiShuAPIClient(
+        app_id=Config.FeiShu_APP_ID,
+        app_secret=Config.FeiShu_APP_SECRET
     )
     
     cursor_client = CursorAgentClient(
@@ -168,7 +168,7 @@ def start_message_loop():
     while True:
         try:
             # BRPOP 阻塞式拉取消息（超时 5 秒）
-            result = redis_client.brpop("algo:bot:seatalk:list", timeout=5)
+            result = redis_client.brpop("algo:bot:FeiShu:list", timeout=5)
             
             if result is None:
                 continue
@@ -198,7 +198,7 @@ def start_message_loop():
                 event_data,
                 session_manager,
                 cursor_client,
-                seatalk_client,
+                FeiShu_client,
                 gitlab_checker
             )
             
@@ -221,17 +221,17 @@ def _process_message(
     event_data: Dict[str, Any],
     session_manager: SessionManager,
     cursor_client: CursorAgentClient,
-    seatalk_client: SeaTalkAPIClient,
+    FeiShu_client: FeiShuAPIClient,
     gitlab_checker: Optional[GitLabAuthChecker]
 ) -> None:
     """
     处理单条消息（在线程池中异步执行）
     
     Args:
-        event_data: SeaTalk 事件数据
+        event_data: FeiShu 事件数据
         session_manager: Session 管理器
         cursor_client: Cursor Agent 客户端
-        seatalk_client: SeaTalk API 客户端
+        FeiShu_client: FeiShu API 客户端
         gitlab_checker: GitLab 权限检查器（可选）
     """
     try:
@@ -245,12 +245,12 @@ def _process_message(
         sender_email = event.get("email")
         
         # 2. 提取消息内容
-        message_content = format_seatalk_message(event_data)
+        message_content = format_FeiShu_message(event_data)
         
         # 3. 确定会话标识
         if event_type == MESSAGE_FROM_BOT_SUBSCRIBER:
             # 私聊：使用 dm_{user_id}
-            user_id = event.get("seatalk_id")
+            user_id = event.get("FeiShu_id")
             thread_id = f"dm_{user_id}"
         else:
             # 群聊：使用 thread_id
@@ -271,7 +271,7 @@ def _process_message(
         if gitlab_checker:
             if not gitlab_checker.check_user_permission(email=sender_email):
                 logger.warning(f"用户 {sender_email} 无权限")
-                seatalk_client.send_message(
+                FeiShu_client.send_message(
                     thread_id=thread_id,
                     content="抱歉，您没有权限使用此服务。",
                     reply_to_message_id=message_id
@@ -303,17 +303,17 @@ def _process_message(
                 last_message_id=message_id
             )
         
-        # 10. 发送结果到 SeaTalk
+        # 10. 发送结果到 FeiShu
         if response.success:
             result_content = response.result.get("content", "")
-            seatalk_client.send_long_message(
+            FeiShu_client.send_long_message(
                 thread_id=thread_id,
                 content=result_content,
                 reply_to_message_id=message_id,
                 is_markdown=True
             )
         else:
-            seatalk_client.send_message(
+            FeiShu_client.send_message(
                 thread_id=thread_id,
                 content=f"处理失败: {response.error}",
                 reply_to_message_id=message_id
@@ -552,10 +552,10 @@ def load_main_process_env():
 # Cursor API
 CURSOR_API_KEY=cursor_api_key_***
 
-# SeaTalk API
-SEATALK_APP_ID=your_app_id
-SEATALK_APP_SECRET=your_app_secret
-SEATALK_SIGNING_SECRET=your_signing_secret
+# FeiShu API
+FeiShu_APP_ID=your_app_id
+FeiShu_APP_SECRET=your_app_secret
+FeiShu_SIGNING_SECRET=your_signing_secret
 
 # Redis
 REDIS_HOST=localhost
@@ -593,15 +593,15 @@ CONFLUENCE_TOKEN=confluence_token_***
 ### 5.1 必需配置
 
 **配置文件** (`config/config.yml`):
-- ✅ `seatalk_bot_api.app_id`
-- ✅ `seatalk_bot_api.app_secret`
+- ✅ `FeiShu_bot_api.app_id`
+- ✅ `FeiShu_bot_api.app_secret`
 - ✅ `cursor_agent.agent_workdir`
 - ✅ `redis.host` 和 `redis.port`
 - ✅ `mysql.host` 和 `mysql.database`
 
 **环境变量** (`.env`):
 - ✅ `CURSOR_API_KEY`
-- ⚠️ `SEATALK_APP_SECRET` (可从配置文件读取)
+- ⚠️ `FeiShu_APP_SECRET` (可从配置文件读取)
 
 ### 5.2 可选配置
 
@@ -644,7 +644,7 @@ ls -la ./projects_src/
 **症状**: 用户发消息，AI 无响应
 
 **排查步骤**:
-1. 检查 Redis 队列: `redis-cli llen algo:bot:seatalk:list`
+1. 检查 Redis 队列: `redis-cli llen algo:bot:FeiShu:list`
 2. 检查线程池: `ps -T -p <pid>`
 3. 检查日志: `grep ERROR log/agent.log`
 4. 检查 Cursor API: `echo $CURSOR_API_KEY`

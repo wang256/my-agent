@@ -28,10 +28,10 @@
 - Redis（消息队列）
 - MySQL（项目信息存储）
 - GitLab（可选，用于权限验证）
-- SeaTalk（IM 平台）
+- FeiShu（IM 平台）
 
 **网络要求**:
-- 能够访问 SeaTalk OpenAPI
+- 能够访问 FeiShu OpenAPI
 - 能够访问 GitLab API
 - 能够 clone Git 仓库（SSH 或 HTTPS）
 
@@ -107,9 +107,9 @@ vim .env
 # Cursor API
 CURSOR_API_KEY=cursor_api_key_***
 
-# SeaTalk API
-SEATALK_APP_ID=your_app_id
-SEATALK_APP_SECRET=your_app_secret
+# FeiShu API
+FeiShu_APP_ID=your_app_id
+FeiShu_APP_SECRET=your_app_secret
 
 # Redis
 REDIS_HOST=localhost
@@ -399,7 +399,7 @@ awk '/2024-03-30 10:00/,/2024-03-30 11:00/' log/agent.log
 
 | 指标 | 说明 | 告警阈值 |
 |------|------|----------|
-| **Redis 队列长度** | `LLEN algo:bot:seatalk:list` | > 100 |
+| **Redis 队列长度** | `LLEN algo:bot:FeiShu:list` | > 100 |
 | **消息处理成功率** | 成功 / 总数 | < 95% |
 | **AI 分析超时率** | 超时 / 总数 | > 10% |
 | **磁盘使用率** | projects_src 目录大小 | > 80% |
@@ -413,7 +413,7 @@ awk '/2024-03-30 10:00/,/2024-03-30 11:00/' log/agent.log
 # monitor.sh
 
 # Redis 队列长度
-QUEUE_LEN=$(redis-cli LLEN algo:bot:seatalk:list)
+QUEUE_LEN=$(redis-cli LLEN algo:bot:FeiShu:list)
 if [ $QUEUE_LEN -gt 100 ]; then
     echo "告警: Redis 队列积压 $QUEUE_LEN 条消息"
 fi
@@ -548,8 +548,8 @@ ls -la /var/log/algo-bot
 
 1. 检查 Redis 队列:
 ```bash
-redis-cli LLEN algo:bot:seatalk:list
-redis-cli LINDEX algo:bot:seatalk:list 0
+redis-cli LLEN algo:bot:FeiShu:list
+redis-cli LINDEX algo:bot:FeiShu:list 0
 ```
 
 2. 检查日志:
